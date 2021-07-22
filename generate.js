@@ -34,9 +34,10 @@ module.exports = ()=>{
     return async (farsi, aac) => {
         return new Promise(async (resolve, reject) => {
             fs.writeFileSync("mytext.txt", "\n\n"+farsi+"\n\n");
-            ps.stdout.on('data', (data)=>{
-                process.stdout.write(data);
-            });
+            let recTimeMs = farsi.length * 180;
+            // ps.stdout.on('data', (data)=>{
+            //     process.stdout.write(data);
+            // });
             ps.stderr.on('data', (data)=>{
                 process.stderr.write(data);
             });
@@ -49,9 +50,10 @@ module.exports = ()=>{
                 // i need PSCore to be able to measure audio levels......
                 // StartRecording should wait for audio and upon hearing some start a debouncer
                 // that debouncer should, when silent for > 1 second, then StopRecording and resolve
+                console.log("STOPPING RECORDING AFTER "+recTimeMs+" MILLISECONDS!");
                 ps.stdin.write(`$Recording::StopRecording()\n`);
                 resolve(aac);
-            }, 5000)
+            }, recTimeMs)
         });
     }
 }
