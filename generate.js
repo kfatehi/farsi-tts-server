@@ -29,14 +29,12 @@ async function isActiveWindow(processName) { // MiniSpeech
 
 module.exports = () => {
     return async (farsi, aac) => {
-        return new Promise(async (resolve, reject) => {
-            fs.writeFileSync("mytext.txt", "\n\n" + farsi + "\n\n");
-            startRecording(aac, async (ps)=>{
-                ps.stdin.write(`$wshell = New-Object -ComObject wscript.shell\n`);
-                await focusWindow("MiniSpeech");
-                ps.stdin.write(`$wshell.SendKeys('{ESC}{ESC}{ESC}%{t}c%{t}c%{t}c%{a}{BS}%{f}omytext.txt{ENTER}%{ENTER}')\n`);    
-            })
-        });
+        fs.writeFileSync("mytext.txt", "\n\n" + farsi + "\n\n");
+        return await startRecording(aac, async (ps)=>{
+            ps.stdin.write(`$wshell = New-Object -ComObject wscript.shell\n`);
+            await focusWindow("MiniSpeech");
+            ps.stdin.write(`$wshell.SendKeys('{ESC}{ESC}{ESC}%{t}c%{t}c%{t}c%{a}{BS}%{f}omytext.txt{ENTER}%{ENTER}')\n`);    
+        })
     }
 }
 
@@ -82,6 +80,7 @@ async function startRecording(filepath, extraPowershellCommander=function(psin){
             resolve(filepath);
         });
         const silenceBreaker = createSilenceAnalyzer(() => {
+            console.log("stop recording");
             ps.stdin.write(`$Recording::StopRecording()\n`);
             ps.stdin.end();
         });
@@ -90,6 +89,7 @@ async function startRecording(filepath, extraPowershellCommander=function(psin){
             let match = str.match(/^peak:(.+)$/);
             if (match) {
                 const level = parseFloat(match[1]);
+                console.log(level);
                 silenceBreaker(level);
             } else {
                 process.stdout.write("o>" + str + '\n');
