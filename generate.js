@@ -44,7 +44,7 @@ module.exports = () => {
 const split2 = require('split2');
 
 
-async function startRecording(filepath, wantsPowershellInput=function(psin){}) {
+async function startRecording(filepath, extraPowershellCommander=function(psin){}) {
     return new Promise(async (resolve, reject) => {
 
         let recordedNonSilenceYet = false;
