@@ -31,7 +31,7 @@ module.exports = () => {
     return async (farsi, aac) => {
         return new Promise(async (resolve, reject) => {
             fs.writeFileSync("mytext.txt", "\n\n" + farsi + "\n\n");
-            startRecording(aac, (ps)=>{
+            startRecording(aac, async (ps)=>{
                 ps.stdin.write(`$wshell = New-Object -ComObject wscript.shell\n`);
                 await focusWindow("MiniSpeech");
                 ps.stdin.write(`$wshell.SendKeys('{ESC}{ESC}{ESC}%{t}c%{t}c%{t}c%{a}{BS}%{f}omytext.txt{ENTER}%{ENTER}')\n`);    
@@ -102,7 +102,7 @@ async function startRecording(filepath, wantsPowershellInput=function(psin){}) {
         ps.stdin.write(`$Recording = [PSCore.LoopbackRecorder]\n`);
         ps.stdin.write(`$Recording::StartRecording("${filepath}")\n`);
         if (extraPowershellCommander) {
-            extraPowershellCommander(ps.stdin);
+            await extraPowershellCommander(ps.stdin);
         }
     });
 }
