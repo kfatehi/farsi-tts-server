@@ -102,7 +102,7 @@ async function startRecording(filepath, extraPowershellCommander=function(psin){
         ps.stdin.write(`$Recording = [PSCore.LoopbackRecorder]\n`);
         ps.stdin.write(`$Recording::StartRecording("${filepath}")\n`);
         if (extraPowershellCommander) {
-            await extraPowershellCommander(ps.stdin);
+            await extraPowershellCommander(ps);
         }
     });
 }
