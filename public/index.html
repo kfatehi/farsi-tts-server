@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farsi Text to Speech</title>
+</head>
+
+<body>
+    <textarea></textarea>
+    <button>Speak</button>
+    <audio controls>
+        <source src="" type="audio/aac"></source>
+    </audio>
+    <script>
+        let button = document.querySelector('button');
+        button.addEventListener('click', async function () {
+            let content = document.querySelector('textarea').value;
+            if (content.length == 0) return;
+            button.disabled = true;
+            let label = button.innerHTML;
+            button.innerHTML = "Please wait...";
+            try {
+                let resp = await fetch('/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                })
+                let output = await resp.json();
+                let audio = document.querySelector('audio');
+                let audioSource = document.querySelector('audio source');
+                console.log(output)
+                audioSource.src = output.path;
+                audio.load();
+                audio.play();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                button.innerHTML = label;
+                button.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+
+</html>
