@@ -45,33 +45,48 @@ const split2 = require('split2');
 async function startRecording(filepath, extraPowershellCommander=function(psin){}) {
     return new Promise(async (resolve, reject) => {
 
-        let recordedNonSilenceYet = false;
-        const silentStopTimeout = 1500;
-        const ZEROSIGNAL = 0.0001;
-        let timeOfLastNonSilentLevel;
+        const createSilenceAnalyzer = (done) => {           
+            let recordedNonSilenceYet = false;
+            const silentStopTimeout = 1500;
+            const ZEROSIGNAL = 0.0001;
+            let timeOfLastNonSilentLevel;
+            let artificialTimer = null;
 
-        const createSilenceAnalyzer = (cb) => (level) => {
-            // Have we recorded anything yet?
-            if (recordedNonSilenceYet == false) {
-                // No we haven't. So we're going to be patient until we do.
-                // If level is > 0, then yeah, we have.
-                if (level > ZEROSIGNAL)
-                    recordedNonSilenceYet = true;
-            } else {
-                // Yes, we must have.
-                // Is it silent now?
-                if (level <= ZEROSIGNAL) {
-                    // How long have we been silent ?
-                    let elapsedTicks = Date.now() - timeOfLastNonSilentLevel;
-                    if (elapsedTicks >= silentStopTimeout) {
-                        // That's long enough. Stop Recording.
-                        cb();
+            let consumer = (level) => {
+                // Have we recorded anything yet?
+                if (recordedNonSilenceYet == false) {
+                    // No we haven't. So we're going to be patient until we do.
+                    // If level is > 0, then yeah, we have.
+                    if (level > ZEROSIGNAL)
+                        recordedNonSilenceYet = true;
+                } else {
+                    // Yes, we must have.
+                    // Is it silent now?
+                    if (level <= ZEROSIGNAL) {
+                        // Consumer might not continue getting called with 0's after the recording is complete,
+                        // which means we never call the callback to signal completion
+                        // so we need to mitigate this by running an artificial timer
+                        // which debounces so long as we are actually getting true levels.
+                        if (artificialTimer !== null) {
+                            clearInterval(artificialTimer);
+                        }                           
+                        artificialTimer = setInterval(()=>consumer(0), 100);
+
+                        // How long have we been silent ?
+                        let elapsedTicks = Date.now() - timeOfLastNonSilentLevel;
+                        if (elapsedTicks >= silentStopTimeout) {
+                            // That's long enough. Stop Recording.
+                            clearInterval(artificialTimer);
+                            done();
+                        }
                     }
                 }
+                if (level > ZEROSIGNAL) {
+                    timeOfLastNonSilentLevel = Date.now();
+                }
             }
-            if (level > ZEROSIGNAL) {
-                timeOfLastNonSilentLevel = Date.now();
-            }
+
+            return consumer;
         }
 
         let ps = spawn("powershell.exe");
@@ -89,7 +104,6 @@ async function startRecording(filepath, extraPowershellCommander=function(psin){
             let match = str.match(/^peak:(.+)$/);
             if (match) {
                 const level = parseFloat(match[1]);
-                console.log(level);
                 silenceBreaker(level);
             } else {
                 process.stdout.write("o>" + str + '\n');
